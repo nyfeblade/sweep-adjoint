@@ -1,0 +1,53 @@
+{
+  "name": "sweep-adjoint",
+  "version": "0.1.0",
+  "description": "Sweep-adjoint differentiation: reverse-color local-block adjoint of a block-implicit sweep (Shu et al., arXiv:2608.08559).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "check:math": "tsx test/check-math.ts",
+    "prepublishOnly": "npm run build && npm test && npm run check:math"
+  },
+  "keywords": [
+    "adjoint",
+    "sweep-adjoint",
+    "implicit-differentiation",
+    "vertex-block-descent",
+    "differentiable-simulation",
+    "inverse-function-theorem"
+  ],
+  "author": "Luke Horn <hornsons21@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/nyfeblade/sweep-adjoint#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nyfeblade/sweep-adjoint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nyfeblade/sweep-adjoint/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
