@@ -25,14 +25,22 @@ export {
   memoryReport,
   tryAllocateTape,
   tapeBytesFor,
-  measureSolverWorkspaces,
   measuredTapeBytesFor,
   measuredSweepBytesFor,
+  liveSweepPeakBytesFor,
+  liveUnrolledPeakBytesFor,
   createUnrolledTape,
   createSweepWorkspace,
+  allocF64,
+  allocCopyF64,
+  withFloat64Tracking,
   UNROLLED_BYTES_PER_VERTEX_ITER,
   MEASURED_BYTES_PER_VERTEX,
+  ADJOINT_STATE_BUFFERS,
+  UNROLLED_XFINAL_BUFFERS,
+  FLOAT64_ALLOC_KINDS,
 } from "./memory.js";
+export { measureLiveAdjointMemory, measureSolverWorkspaces } from "./measure.js";
 export { formatBytes, formatPct, relError, maxAbsDiff, copyF64 } from "./math2.js";
 export { probeLoss } from "./energy.js";
 export {
@@ -58,4 +66,7 @@ export type {
   MeasuredHold,
   MeasuredMemory,
   MethodName,
+  Float64AllocKind,
+  AllocationRecord,
+  PathMemory,
 } from "./types.js";

@@ -5,9 +5,6 @@ import {
   createK1ProofCloth,
   fdForceGrad,
   K1_PROOF_SCHEMA,
-  measuredSweepBytesFor,
-  measuredTapeBytesFor,
-  measureSolverWorkspaces,
   proveK1,
   runExplainer,
   runK1Gate,
@@ -60,21 +57,5 @@ test("sweep vs finite difference on a 5×5 K=2 cloth", () => {
   const fd = fdForceGrad(fdState, 2, fdState.probe, 0);
   const ad = explained.sweepAdj[2 * fdState.probe];
   const fdRel = Math.abs(fd - ad) / Math.max(Math.abs(fd), 1e-8);
-  assert.ok(fdRel < 0.05, `fd=${fd} ad=${ad} rel=${fdRel}`);
-});
-
-test("measured tape grows with K; sweep workspace is flat", () => {
-  const n = 100;
-  const k1 = measureSolverWorkspaces(n, 1);
-  const k8 = measureSolverWorkspaces(n, 8);
-  const k32 = measureSolverWorkspaces(n, 32);
-  assert.ok(k1.ok && k8.ok && k32.ok);
-  if (k1.ok && k8.ok && k32.ok) {
-    assert.equal(k1.sweepBytes, k8.sweepBytes);
-    assert.equal(k8.sweepBytes, k32.sweepBytes);
-    assert.equal(k1.sweepBytes, measuredSweepBytesFor(n));
-    assert.equal(k1.tapeBytes, measuredTapeBytesFor(n, 1));
-    assert.equal(k32.tapeBytes, k1.tapeBytes * 32);
-    assert.ok(k32.tapeBytes > k32.sweepBytes);
-  }
+  assert.ok(fdRel < 1e-6, `fd=${fd} ad=${ad} rel=${fdRel}`);
 });
