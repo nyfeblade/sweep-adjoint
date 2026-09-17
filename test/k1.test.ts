@@ -4,11 +4,14 @@ import {
   createCloth,
   createK1ProofCloth,
   fdForceGrad,
+  K1_PROOF_SCHEMA,
   measuredSweepBytesFor,
   measuredTapeBytesFor,
   measureSolverWorkspaces,
   proveK1,
   runExplainer,
+  runK1Gate,
+  serializeK1Proof,
 } from "../src/index.ts";
 
 test("K=1: sweep-adjoint matches FD and tape; IFT is wrong", () => {
@@ -22,6 +25,17 @@ test("K=1: sweep-adjoint matches FD and tape; IFT is wrong", () => {
   assert.ok(proof.sweepVsFd < 1e-5 || Math.abs(proof.sweep - proof.fd) < 1e-7);
   assert.ok(proof.sweepVsUnrolled < 1e-8);
   assert.ok(proof.iftVsFd > 0.08);
+});
+
+test("K=1 gate + proof artifact schema", () => {
+  const gate = runK1Gate();
+  assert.ok(gate.ok);
+  assert.equal(gate.emptyMesh.code, "empty_mesh");
+  assert.equal(gate.kZero.code, "k_zero");
+  const artifact = serializeK1Proof(gate.proof);
+  assert.equal(artifact.schema, K1_PROOF_SCHEMA);
+  assert.equal(artifact.ok, true);
+  assert.equal(artifact.thesis, "sweep ≈ FD/tape; IFT wrong at K=1");
 });
 
 test("sweep matches unrolled at K=32", () => {

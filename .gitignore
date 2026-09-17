@@ -11,3 +11,4 @@ yarn-error.log*
 .venv/
 __pycache__/
 *.pyc
+artifacts/*.json

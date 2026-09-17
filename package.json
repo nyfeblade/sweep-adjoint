@@ -11,6 +11,9 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "sweep-adjoint-check": "./dist/cli.js"
+  },
   "files": [
     "dist",
     "README.md",
