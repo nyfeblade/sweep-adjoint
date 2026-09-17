@@ -21,7 +21,7 @@ Node **20+**. ESM only (`import`, not `require`).
 
 Unrolled AD tapes the stepper. Memory grows with K. Equation-level IFT (Neural ODE / DEQ / optimization layers) differentiates the fixed point, not the finite solver that ran. At K=1, IFT is wrong — tens of percent off.
 
-Sweep-adjoint is the reverse-colored Gauss–Seidel of the energy-minimizing sweep that actually executed. It matches the tape and central finite differences. Workspace is O(N), independent of K.
+Sweep-adjoint is the reverse-colored Gauss–Seidel of the energy-minimizing sweep that actually executed. It matches the tape and central finite differences. Live Float64 peak inside `sweepAdjoint` is O(N), independent of K.
 
 ## Usage
 
@@ -66,9 +66,23 @@ Empty mesh and K=0 throw `SweepAdjointError` (`empty_mesh` / `k_zero`). Those ar
 | `unrolledAdjoint(state, K)` | Tape-twin unrolled AD |
 | `iftAdjoint(state)` | Equation-level IFT (global Hessian / CG) |
 | `proveK1()` | Central FD vs tape vs sweep vs IFT on the 10×10 fixture |
+| `measureLiveAdjointMemory(state, K)` | Live Float64 peak/held inside the two adjoints |
 | `SweepAdjointError` | `empty_mesh` and `k_zero` |
 
-Helpers: `createCloth`, `createK1ProofCloth`, `createEmptyMesh`, `cloneCloth`, `fdForceGrad`, `runExplainer`, `probeLoss`, memory workspace sizes.
+Helpers: `createCloth`, `createK1ProofCloth`, `createEmptyMesh`, `cloneCloth`, `fdForceGrad`, `runExplainer`, `probeLoss`, `measureLiveAdjointMemory`.
+
+## Memory (what is actually measured)
+
+`measureLiveAdjointMemory` / `measureSolverWorkspaces` **call** `unrolledAdjoint` and `sweepAdjoint` and count the Float64 workspaces those functions allocate:
+
+| Path | Counted buffers | Peak |
+| --- | --- | --- |
+| Unrolled | K-deep tape + `xFinal` + `adj` + `forceAdj` | `(K + 3) × N × 16 B` |
+| Sweep | rematerialize workspace + `adj` + `forceAdj` | `3 × N × 16 B` (flat in K) |
+
+That is **not** the old helper-only claim (`createUnrolledTape` / `createSweepWorkspace` `.byteLength` alone). Helper tape/workspace sizes are still exported as `measuredTapeBytesFor` / `measuredSweepBytesFor` and labeled schematic. `memoryReport` is a separate 256 B/vertex fat-tape sketch, also schematic.
+
+Not counted: `colorOrder` `number[]`, cloth clones, or Chromium `performance.memory` (null on Node). `tape.subarray` views share the tape buffer and are not extra allocations.
 
 ## Checks
 
@@ -84,6 +98,7 @@ npm run check:math
 - Tape / unrolled AD matches central FD
 - Sweep-adjoint matches tape and FD (~1e-7)
 - Standard IFT is **wrong** at K=1 (relative error > 8%)
+- Live sweep Float64 peak is O(N); unrolled peak grows with K and exceeds the helper-only tape size
 
 That is the paper: differentiate the solver that ran, not the equation.
 

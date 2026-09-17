@@ -7,7 +7,7 @@ import {
   seedProbeLossAdj,
 } from "./energy.js";
 import { requireMesh, colorOrder } from "./mesh.js";
-import { createSweepWorkspace, createUnrolledTape, memoryReport } from "./memory.js";
+import { allocCopyF64, allocF64, createSweepWorkspace, createUnrolledTape, memoryReport } from "./memory.js";
 import { copyF64 } from "./math2.js";
 import type { ClothState, ExplainerResult, LocalSystem } from "./types.js";
 
@@ -87,7 +87,7 @@ function reverseIteration(
   }
 }
 
-/** Tape-twin unrolled adjoint. Memory is O(K·N). */
+/** Tape-twin unrolled adjoint. Float64 peak is tape + xFinal + adj + forceAdj = O(K·N). */
 export function unrolledAdjoint(state: ClothState, sweeps: number): Float64Array {
   requireMesh(state, sweeps);
   const local = newLocal();
@@ -100,9 +100,9 @@ export function unrolledAdjoint(state: ClothState, sweeps: number): Float64Array
     recordIteration(state, even, odd, slice, local);
   }
 
-  const xFinal = copyF64(state.x);
-  const adj = new Float64Array(state.n * 2);
-  const forceAdj = new Float64Array(state.n * 2);
+  const xFinal = allocCopyF64(state.x, "xFinal");
+  const adj = allocF64(state.n * 2, "adj");
+  const forceAdj = allocF64(state.n * 2, "forceAdj");
   seedProbeLossAdj(state, adj);
 
   for (let k = sweeps - 1; k >= 0; k--) {
@@ -134,7 +134,7 @@ export function reverseColorSweep(
 
 /**
  * Reverse-color local-block adjoint. Rematerializes each sweep from `x0`.
- * Workspace is O(N), independent of K.
+ * Float64 peak is workspace + adj + forceAdj — O(N), independent of K.
  */
 export function sweepAdjoint(state: ClothState, sweeps: number, x0: Float64Array): Float64Array {
   requireMesh(state, sweeps);
@@ -142,8 +142,8 @@ export function sweepAdjoint(state: ClothState, sweeps: number, x0: Float64Array
   const even = colorOrder(state.n, state.nx, 0);
   const odd = colorOrder(state.n, state.nx, 1);
   const workspace = createSweepWorkspace(state.n);
-  const adj = new Float64Array(state.n * 2);
-  const forceAdj = new Float64Array(state.n * 2);
+  const adj = allocF64(state.n * 2, "adj");
+  const forceAdj = allocF64(state.n * 2, "forceAdj");
 
   seedProbeLossAdj(state, adj);
 
