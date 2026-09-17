@@ -39,10 +39,14 @@ export {
   proveK1,
   createK1ProofCloth,
   fdForceGrad,
+  runK1Gate,
+  serializeK1Proof,
+  formatK1GateReport,
   K1_PROOF_GRID,
   K1_PROOF_SWEEPS,
+  K1_PROOF_SCHEMA,
 } from "./prove-k1.js";
-export type { K1Proof } from "./prove-k1.js";
+export type { K1Proof, K1ProofArtifact, K1Gate, GateCheck } from "./prove-k1.js";
 export type {
   ClothState,
   ClothParams,

@@ -18,3 +18,8 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run check:math
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k1-proof
+          path: artifacts/k1-proof.json

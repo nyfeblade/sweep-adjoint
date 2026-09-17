@@ -5,6 +5,7 @@ Installable TypeScript library for **sweep-adjoint** differentiation: differenti
 - **Maintainer:** Luke Horn ([nyfeblade](https://github.com/nyfeblade), `hornsons21@gmail.com`)
 - **Math:** Shu et al., *Differentiate the Solver, Not the Equation*, [arXiv:2608.08559](https://arxiv.org/abs/2608.08559)
 - **Visualizer / proofs:** [sweep-adjoint-visualizer](https://github.com/nyfeblade/sweep-adjoint-visualizer)
+- **Factory OS:** [FACTORY.md](./FACTORY.md) — Sweep Eng mini-org (Lead / Core / Proof / Integrator / Ops)
 
 The backward pass **is** the forward block-implicit sweep run in reverse-color order. Local 3×3 blocks in the paper; this library uses the same object as a 2×2 slice. Not a production differentiable physics engine.
 
@@ -78,13 +79,17 @@ npm test
 npm run check:math
 ```
 
-`check:math` prints ∂L/∂p (handle force_x) four ways after **one** VBD sweep on a 10×10 grid. Pass when:
+`check:math` prints ∂L/∂p (handle force_x) four ways after **one** VBD sweep on a 10×10 grid and writes `artifacts/k1-proof.json`. After `npm run build`, `npx sweep-adjoint-check` is the same gate. Pass when:
 
 - Tape / unrolled AD matches central FD
 - Sweep-adjoint matches tape and FD (~1e-7)
 - Standard IFT is **wrong** at K=1 (relative error > 8%)
 
 That is the paper: differentiate the solver that ran, not the equation.
+
+## Factory
+
+Sweep Eng (Lead, Core, Proof, Integrator, Ops) is documented in [FACTORY.md](./FACTORY.md). CloudAgents execute; bots supervise; chat is not the backlog; the K=1 gate stays green.
 
 ## Visualizer
 

@@ -1,5 +1,6 @@
+import { SweepAdjointError, type SolverErrorCode } from "./errors.js";
 import { probeLoss } from "./energy.js";
-import { cloneCloth, createCloth, resetToRest, vertexIndex } from "./mesh.js";
+import { cloneCloth, createCloth, createEmptyMesh, resetToRest, vertexIndex } from "./mesh.js";
 import { forwardSweeps, runExplainer } from "./solver.js";
 import type { ClothState } from "./types.js";
 
@@ -26,6 +27,87 @@ export type K1Proof = {
   loss: number;
   ok: boolean;
 };
+
+export const K1_PROOF_SCHEMA = "sweep-adjoint/k1-proof/v1" as const;
+
+export type K1ProofArtifact = K1Proof & {
+  schema: typeof K1_PROOF_SCHEMA;
+  thesis: "sweep ≈ FD/tape; IFT wrong at K=1";
+};
+
+export type GateCheck = { ok: boolean; code?: SolverErrorCode };
+
+export type K1Gate = {
+  emptyMesh: GateCheck;
+  kZero: GateCheck;
+  proof: K1Proof;
+  ok: boolean;
+};
+
+/** Durable, JSON-serializable proof record for CI / FACTORY.md. */
+export function serializeK1Proof(proof: K1Proof): K1ProofArtifact {
+  return {
+    schema: K1_PROOF_SCHEMA,
+    thesis: "sweep ≈ FD/tape; IFT wrong at K=1",
+    ...proof,
+  };
+}
+
+function caughtSolverCode(run: () => void): GateCheck {
+  try {
+    run();
+    return { ok: false };
+  } catch (error) {
+    if (error instanceof SweepAdjointError) {
+      return { ok: true, code: error.code };
+    }
+    return { ok: false };
+  }
+}
+
+/** Empty-mesh + K=0 errors and the K=1 thesis, one call for Proof / CLI. */
+export function runK1Gate(): K1Gate {
+  const emptyMesh = caughtSolverCode(() => {
+    runExplainer(createEmptyMesh(), 1);
+  });
+  const kZero = caughtSolverCode(() => {
+    runExplainer(createCloth(4, 4), 0);
+  });
+  const proof = proveK1();
+  const emptyOk = emptyMesh.ok && emptyMesh.code === "empty_mesh";
+  const kZeroOk = kZero.ok && kZero.code === "k_zero";
+  return {
+    emptyMesh: { ok: emptyOk, code: emptyMesh.code },
+    kZero: { ok: kZeroOk, code: kZero.code },
+    proof,
+    ok: emptyOk && kZeroOk && proof.ok,
+  };
+}
+
+/** Human-readable K=1 gate table (FACTORY.md proof artifact companion). */
+export function formatK1GateReport(gate: K1Gate): string {
+  const { proof } = gate;
+  const mark = (ok: boolean) => (ok ? "ok   " : "FAIL ");
+  const tapeVsFd = Math.abs(proof.unrolled - proof.fd) / Math.max(Math.abs(proof.fd), 1e-12);
+  const lines = [
+    `${mark(gate.emptyMesh.ok)} empty mesh → SweepAdjointError(${gate.emptyMesh.code ?? "missing"})`,
+    `${mark(gate.kZero.ok)} K=0 → SweepAdjointError(${gate.kZero.code ?? "missing"})`,
+    "",
+    "K=1 verification  ·  10×10 VBD mass-spring  ·  ONE sweep",
+    "p = handle force_x    L = ½‖x_probe − rest‖²",
+    "",
+    `${"method".padEnd(24)} ${"∂L/∂p".padStart(14)} ${"vs FD".padStart(10)}`,
+    "-".repeat(52),
+    `${"Central FD (gold)".padEnd(24)} ${proof.fd.toExponential(8).padStart(14)} ${"0.00e+0".padStart(10)}`,
+    `${"Tape / unrolled AD".padEnd(24)} ${proof.unrolled.toExponential(8).padStart(14)} ${tapeVsFd.toExponential(2).padStart(10)}`,
+    `${"Standard IFT".padEnd(24)} ${proof.ift.toExponential(8).padStart(14)} ${proof.iftVsFd.toExponential(2).padStart(10)}`,
+    `${"Sweep-adjoint".padEnd(24)} ${proof.sweep.toExponential(8).padStart(14)} ${proof.sweepVsFd.toExponential(2).padStart(10)}`,
+    "",
+    `sweep vs tape  ${proof.sweepVsUnrolled.toExponential(2)}`,
+    `IFT vs sweep   ${proof.iftVsSweep.toFixed(3)}`,
+  ];
+  return lines.join("\n");
+}
 
 export function createK1ProofCloth(): ClothState {
   const cloth = createCloth(K1_PROOF_GRID, K1_PROOF_GRID);
